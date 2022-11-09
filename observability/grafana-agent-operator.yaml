@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: grafana-agent-operator
+
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: grafana-agent-operator
+  namespace: grafana-agent-operator
+spec:
+  chart: grafana-agent-operator
+  repo: https://grafana.github.io/helm-charts
+  targetNamespace: grafana-agent-operator
+  version: 0.2.8

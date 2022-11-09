@@ -1,0 +1,176 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: landing-grafana-agent
+  labels:
+    app: landing-grafana-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: landing-grafana-agent
+  template:
+    metadata:
+      labels:
+        app: landing-grafana-agent
+    spec:
+      containers:
+        - name: grafana-agent
+          image: grafana/agent:v0.28.1
+          args:
+            # Pulled from https://hub.docker.com/layers/grafana/agent/latest/images/sha256-9df72b36b872e4d3ac7bd45ebfcb9c1cb38f5bbf4bb71b1d397875786494d26d?context=explore
+            - --config.file=/etc/agent/agent.yaml
+            - --metrics.wal-directory=/etc/agent/data
+            # Required for app agent https://grafana.com/docs/agent/latest/configuration/integrations/integrations-next/
+            - --enable-features=integrations-next
+          env:
+            - name: LOG_LEVEL
+              value: debug
+            - name: TZ
+              value: Europe/Berlin
+          volumeMounts:
+            - mountPath: /etc/agent/data
+              name: data
+            - mountPath: /etc/agent/agent.yaml
+              name: config
+              subPath: agent.yaml
+          ports:
+            - name: http
+              containerPort: 8080
+          resources:
+            limits:
+              cpu: "3"
+              memory: 4Gi
+            requests:
+              cpu: "2"
+              memory: 2Gi
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: landing-grafana-agent-temp
+        - name: config
+          configMap:
+            name: landing-grafana-agent-config
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: landing-grafana-agent-temp
+spec:
+  accessModes:
+    - ReadWriteOnce
+  volumeMode: Filesystem
+  storageClassName: premium-rwo
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: landing-grafana-agent-config
+data:
+  agent.yaml: |-
+    metrics:
+      wal_directory: /etc/agent/data/wal
+      global: {}
+      configs:
+        - name: default
+          remote_write:
+            - url: http://mimir-nginx.observability.svc.cluster.local/api/v1/push
+    logs:
+      positions_directory: /etc/agent/data/loki-pos
+      configs:
+        - name: default
+          scrape_configs: []
+          clients:
+            - url: http://loki-gateway.observability.svc.cluster.local/loki/api/v1/push
+    traces:
+      configs:
+        - name: default
+          remote_write:
+            - endpoint: tempo.observability.svc.cluster.local:4317
+              insecure: true
+          receivers:
+            otlp:
+              protocols:
+                grpc:
+                http:
+                  cors:
+                    allowed_origins:
+                      - https://speechify.com
+                      # For testing
+                      - http://localhost:3000
+                    max_age: 7200
+    integrations:
+      app_agent_receiver_configs:
+        - autoscrape:
+            enable: true
+            metrics_instance: 'default'
+          instance: 'landing'
+          logs_instance: 'default'
+          traces_instance: 'default'
+          server:
+            host: 0.0.0.0
+            port: 8080
+            cors_allowed_origins:
+              - https://speechify.com
+              # For testing
+              - http://localhost:3000
+          logs_labels: # labels to add to loki log record
+            app: landing # static value
+            kind: # value will be taken from log items. exception, log, measurement, etc
+          logs_send_timeout: 5000
+          sourcemaps:
+            download: true # will download source file, extract source map location,
+            # download source map and use it to transform stack trace locations
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: landing-grafana-agent
+  labels:
+    app: landing-grafana-agent
+spec:
+  selector:
+    app: landing-grafana-agent
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: landing-grafana-agent
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`landing.ingest.observability.speechify.dev`)
+      kind: Rule
+      services:
+        - kind: Service
+          name: landing-grafana-agent
+          port: 80
+          scheme: http
+  tls:
+    secretName: landing.ingest.observability.speechify.dev
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: landing.ingest.observability.speechify.dev
+spec:
+  dnsNames:
+    - landing.ingest.observability.speechify.dev
+  secretName: landing.ingest.observability.speechify.dev
+  issuerRef:
+    name: letsencrypt
+    kind: ClusterIssuer

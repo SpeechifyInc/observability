@@ -1,0 +1,36 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: tempo
+  namespace: observability
+spec:
+  chart: tempo
+  repo: https://grafana.github.io/helm-charts
+  targetNamespace: observability
+  version: 0.16.3
+  valuesContent: |-
+    tempo:
+      retention: 720h
+      searchEnabled: true
+      storage:
+        trace:
+          backend: gcs
+          gcs:
+            bucket_name: observability-tempo
+      resources:
+        requests:
+          cpu: 250m
+          memory: 1Gi
+        limits:
+          cpu: 2000m
+          memory: 4Gi
+
+    serviceMonitor:
+      enabled: true
+
+    serviceAccount:
+      create: true
+      name: tempo
+      annotations:
+        # !!! Update this line
+        iam.gke.io/gcp-service-account: observability-tempo@PROJECT_ID_HERE.iam.gserviceaccount.com

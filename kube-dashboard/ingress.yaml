@@ -1,0 +1,45 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: kubernetes-dashboard
+  namespace: kubernetes-dashboard
+  annotations:
+    traefik.ingress.kubernetes.io/router.tls: "true"
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`kube.observability.speechify.dev`)
+      kind: Rule
+      services:
+        - kind: Service
+          name: kubernetes-dashboard
+          port: 443
+          scheme: https
+          serversTransport: insecure-transport
+  tls:
+    secretName: kube.observability.speechify.dev
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: kube.observability.speechify.dev
+  namespace: kubernetes-dashboard
+spec:
+  dnsNames:
+    - kube.observability.speechify.dev
+  secretName: kube.observability.speechify.dev
+  issuerRef:
+    name: letsencrypt
+    kind: ClusterIssuer
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: ServersTransport
+metadata:
+  name: insecure-transport
+  namespace: kubernetes-dashboard
+spec:
+  serverName: kube.observability.speechify.dev
+  insecureSkipVerify: true

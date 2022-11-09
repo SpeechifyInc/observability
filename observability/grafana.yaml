@@ -1,0 +1,98 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: grafana
+  namespace: observability
+spec:
+  chart: grafana
+  repo: https://grafana.github.io/helm-charts
+  targetNamespace: observability
+  version: 6.43.2
+  valuesContent: |-
+    podPortName: http
+    service:
+      portName: http
+
+    datasources:
+      datasources.yaml:
+        apiVersion: 1
+
+        datasources:
+          - name: Mimir
+            uid: mimir
+            type: prometheus
+            url: http://mimir-nginx/prometheus
+            isDefault: true
+          - name: Loki
+            uid: loki
+            type: loki
+            url: http://loki-gateway
+          - name: Tempo
+            uid: tempo
+            type: tempo
+            url: http://tempo:3100
+
+    ingress:
+      enabled: false
+
+    serviceMonitor:
+      enabled: true
+
+    resources:
+      limits:
+        cpu: 1000m
+        memory: 2Gi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+
+    persistence:
+      enabled: true
+      size: 20Gi
+
+    admin:
+      existingSecret: grafana-auth
+      userKey: username
+      passwordKey: password
+
+    imageRenderer:
+      enabled: true
+      resources:
+        limits:
+          cpu: 250m
+          memory: 250Mi
+        requests:
+          cpu: 50m
+          memory: 50Mi
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: grafana
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`observability.speechify.dev`)
+      kind: Rule
+      services:
+        - kind: Service
+          name: grafana
+          port: 80
+          scheme: http
+  tls:
+    secretName: observability.speechify.dev
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: observability.speechify.dev
+spec:
+  dnsNames:
+    - observability.speechify.dev
+  secretName: observability.speechify.dev
+  issuerRef:
+    name: letsencrypt
+    kind: ClusterIssuer

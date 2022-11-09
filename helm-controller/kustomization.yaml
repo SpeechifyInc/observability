@@ -1,0 +1,8 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+# Update the version from https://github.com/k3s-io/helm-controller/releases
+- https://github.com/k3s-io/helm-controller/releases/download/v0.13.0/deploy-cluster-scoped.yaml
+- namespace.yaml
+- role.yaml
+namespace: helm-system

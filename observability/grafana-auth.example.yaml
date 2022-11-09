@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Secret
+type: Opaque
+metadata:
+  name: grafana-auth
+stringData:
+  username: admin
+  # head /dev/urandom | tr -dc A-Za-z0-9 | head -c 24 ; echo ''
+  password: YOUR_PASSWORD_HERE

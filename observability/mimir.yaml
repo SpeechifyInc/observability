@@ -1,0 +1,58 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: mimir
+  namespace: observability
+spec:
+  chart: mimir-distributed
+  repo: https://grafana.github.io/helm-charts
+  targetNamespace: observability
+  version: 3.2.0
+  valuesContent: |-
+    # Turn off the built-in MinIO support
+    minio:
+      enabled: false
+
+    mimir:
+      structuredConfig:
+        alertmanager_storage:
+          gcs:
+            bucket_name: observability-mimir-alert-manager
+        blocks_storage:
+          backend: gcs
+          gcs:
+            bucket_name: observability-mimir-blocks
+        ruler_storage:
+          gcs:
+            bucket_name: observability-mimir-ruler
+
+    metaMonitoring:
+      serviceMonitor:
+        enabled: true
+
+    serviceAccount:
+      create: true
+      name: mimir
+      annotations:
+        # !!! Update this line
+        iam.gke.io/gcp-service-account: observability-mimir@PROJECT_ID_HERE.iam.gserviceaccount.com
+
+---
+apiVersion: monitoring.grafana.com/v1alpha1
+kind: MetricsInstance
+metadata:
+  name: mimir
+spec:
+  remoteWrite:
+    - url: http://mimir-nginx.observability.svc.cluster.local/api/v1/push
+  serviceMonitorNamespaceSelector: {}
+  serviceMonitorSelector:
+    matchLabels: {}
+
+  podMonitorNamespaceSelector: {}
+  podMonitorSelector:
+    matchLabels: {}
+
+  probeNamespaceSelector: {}
+  probeSelector:
+    matchLabels: {}

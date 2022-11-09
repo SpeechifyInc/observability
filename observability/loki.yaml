@@ -1,0 +1,62 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: loki
+  namespace: observability
+spec:
+  chart: loki
+  repo: https://grafana.github.io/helm-charts
+  targetNamespace: observability
+  version: 3.3.2
+  valuesContent: |-
+    loki:
+      auth_enabled: false
+      storage:
+        type: gcs
+        bucketNames:
+          chunks: observability-loki-chunks
+          ruler: observability-loki-ruler
+          admin: observability-loki-admin
+      storage_config:
+        boltdb_shipper:
+          cache_ttl: 720h # 30 days
+
+      compactor:
+        retention_enabled: true
+
+    test:
+      enabled: false
+    monitoring:
+      selfMonitoring:
+        enabled: false
+        grafanaAgent:
+          installOperator: false
+        lokiCanary:
+          enabled: false
+
+    serviceAccount:
+      create: true
+      name: loki
+      annotations:
+        # !!! Update this line
+        iam.gke.io/gcp-service-account: observability-loki@PROJECT_ID_HERE.iam.gserviceaccount.com
+---
+apiVersion: monitoring.grafana.com/v1alpha1
+kind: LogsInstance
+metadata:
+  name: loki
+spec:
+  clients:
+    - url: http://loki-gateway.observability.svc.cluster.local/loki/api/v1/push
+  podLogsNamespaceSelector: {}
+  podLogsSelector:
+    matchLabels: {}
+
+---
+apiVersion: monitoring.grafana.com/v1alpha1
+kind: PodLogs
+metadata:
+  name: all
+spec:
+  selector:
+    matchLabels: {}

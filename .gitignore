@@ -1,0 +1,3 @@
+cert-manager/cloudflare-api-token-secret.yaml
+observability/grafana-auth.yaml
+traefik/secret.yaml

@@ -1,0 +1,62 @@
+# Expose the Traefik Dashboard with basic auth
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: traefik-dashboard
+  namespace: traefik-system
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`traefik.observability.speechify.dev`)
+      middlewares:
+        - name: traefik-dashboard-auth
+      kind: Rule
+      services:
+        - kind: TraefikService
+          name: api@internal
+  tls:
+    secretName: traefik.observability.speechify.dev
+
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: traefik.observability.speechify.dev
+  namespace: traefik-system
+spec:
+  dnsNames:
+    - traefik.observability.speechify.dev
+  secretName: traefik.observability.speechify.dev
+  issuerRef:
+    name: letsencrypt
+    kind: ClusterIssuer
+
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: traefik-dashboard-auth
+  namespace: traefik-system
+spec:
+  basicAuth:
+    secret: traefik-dashboard-auth
+
+---
+# Tell prometheus to scrape the ingress
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: traefik
+  namespace: traefik-system
+spec:
+  namespaceSelector:
+    matchNames:
+      - kube-system
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: traefik
+  endpoints:
+    - port: metrics
+      interval: 5s
+      path: /metrics
