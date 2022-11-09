@@ -16,7 +16,12 @@ We use the [K3S Helm Controller](https://github.com/k3s-io/helm-controller) to g
 
 Install the Grafana Agent operator which sets up required CRDs such as `ServiceMonitor` for Traefik and other components `kubectl apply -f observability/grafana-agent-operator.yaml`
 
-We use Traefik for ingress and setup the dashboard behind authentication. Create a file called `secret.yaml` under `traefik` based on `secret.example.yaml`. Follow the instructions to setup the login. Install the Traefik ingress controller `kubectl apply -k traefik`
+We use the open source edge router [Traefik](https://traefik.io/traefik/) for ingress which comes with a built in dashboard.
+
+1. Create a file called `secret.yaml` under `traefik` based on `secret.example.yaml`. Follow the instructions to setup the login
+2. Update the `/traefik/dashboard.yaml` file with your domain
+3. Install the Traefik ingress controller `kubectl apply -k traefik`
+4. Go to https://traefik.observability.your-domain.com to see your dashboard
 
 ### Observability stack
 
@@ -26,9 +31,16 @@ Before continuing, please ensure that Workload Identity Federation has been conf
 
 1. Update `/observability/setup-gcp.sh` with your `PROJECT_ID`. This script will create GCS buckets, IAM roles, IAM service accounts and IAM policy bindings. It requires that `gcloud` and `gsutil` are installed. Please read through the entire script before running
 2. Create `grafana-auth.yaml` in `/observability` based on `grafana-auth.example.yaml` and edit as appropriate
-3. Edit `mimir.prod.yaml` `loki.prod.yaml` and `tempo.prod.yaml` replacing the service account annotation of `PROJECT_ID_HERE` with your GCP project id
-4. Install the stack with `kubectl apply -k observability`
-5. Edit and install the ingest Grafana Agents as desired with `kubectl apply -k observability/ingest`
+3. Edit `grafana.yaml` changing the certificates and ingress routes as appropriate for your domain
+4. Edit `mimir.prod.yaml` `loki.prod.yaml` and `tempo.prod.yaml` replacing the service account annotation of `PROJECT_ID_HERE` with your GCP project id
+5. Install the stack with `kubectl apply -k observability`
+6. If desired, you can use Grafana Faro with Grafana agents. Edit and install the ingest Grafana Agents with `kubectl apply -k observability/ingest`
 
 ### Kubernetes Dashboard
 
+The [Kubernetes Dashboard](https://github.com/kubernetes/dashboard) is a web-based interface for your cluster. "It allows users to manage applications running in the cluster and troubleshoot them, as well as manage the cluster itself."
+
+1. Update `/kube-dashboard/ingress.yaml` with your domain
+2. Install the Kubernetes dashboard with `kubectl apply -k kube-dashboard`
+3. Run `kube-dashboard/get-auth.sh` and follow the instructions to setup your Kubernetes config with a token for logging in
+4. Go to https://kube.observability.speechify.dev and use your Kubernetes config (usually `~/.kube/config`) to login
