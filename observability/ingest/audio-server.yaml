@@ -100,7 +100,7 @@ data:
                 http:
                   cors:
                     allowed_origins:
-                      - https://nooneshouldeverusethisdomaincauseextensiondoesntneedit.speechify.com/
+                      - https://audio.api.speechify.dev
                     max_age: 7200
     integrations:
       app_agent_receiver_configs:
@@ -114,7 +114,7 @@ data:
             host: 0.0.0.0
             port: 8080
             cors_allowed_origins:
-              - https://nooneshouldeverusethisdomaincauseextensiondoesntneedit.speechify.com/
+              - https://audio.api.speechify.dev
           logs_labels: # labels to add to loki log record
             app: audio-server # static value
             kind: # value will be taken from log items. exception, log, measurement, etc
