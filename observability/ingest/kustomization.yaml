@@ -7,4 +7,5 @@ resources:
 - mobile-extension.yaml
 - onboarding.yaml
 - web-app.yaml
+- audio-server.yaml
 namespace: observability-ingest
