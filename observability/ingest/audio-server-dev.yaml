@@ -1,18 +1,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: audio-server-grafana-agent
+  name: audio-server-dev-grafana-agent
   labels:
-    app: audio-server-grafana-agent
+    app: audio-server-dev-grafana-agent
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: audio-server-grafana-agent
+      app: audio-server-dev-grafana-agent
   template:
     metadata:
       labels:
-        app: audio-server-grafana-agent
+        app: audio-server-dev-grafana-agent
     spec:
       containers:
         - name: grafana-agent
@@ -47,16 +47,16 @@ spec:
       volumes:
         - name: data
           persistentVolumeClaim:
-            claimName: audio-server-grafana-agent-temp
+            claimName: audio-server-dev-grafana-agent-temp
         - name: config
           configMap:
-            name: audio-server-grafana-agent-config
+            name: audio-server-dev-grafana-agent-config
 
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: audio-server-grafana-agent-temp
+  name: audio-server-dev-grafana-agent-temp
 spec:
   accessModes:
     - ReadWriteOnce
@@ -70,7 +70,7 @@ spec:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: audio-server-grafana-agent-config
+  name: audio-server-dev-grafana-agent-config
 data:
   agent.yaml: |-
     metrics:
@@ -100,19 +100,19 @@ data:
                 http:
                   cors:
                     allowed_origins:
-                      - https://audio.api.speechify.dev
+                      - https://dev.audio.api.speechify.dev
                     max_age: 7200
 
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: audio-server-grafana-agent
+  name: audio-server-dev-grafana-agent
   labels:
-    app: audio-server-grafana-agent
+    app: audio-server-dev-grafana-agent
 spec:
   selector:
-    app: audio-server-grafana-agent
+    app: audio-server-dev-grafana-agent
   type: ClusterIP
   ports:
     - name: http
@@ -123,30 +123,30 @@ spec:
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
-  name: audio-server-grafana-agent
+  name: audio-server-dev-grafana-agent
 spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`audio-server.ingest.observability.speechify.dev`)
+    - match: Host(`audio-server-dev.ingest.observability.speechify.dev`)
       kind: Rule
       services:
         - kind: Service
-          name: audio-server-grafana-agent
+          name: audio-server-dev-grafana-agent
           port: 80
           scheme: http
   tls:
-    secretName: audio-server.ingest.observability.speechify.dev
+    secretName: audio-server-dev.ingest.observability.speechify.dev
 
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: audio-server.ingest.observability.speechify.dev
+  name: audio-server-dev.ingest.observability.speechify.dev
 spec:
   dnsNames:
-    - audio-server.ingest.observability.speechify.dev
-  secretName: audio-server.ingest.observability.speechify.dev
+    - audio-server-dev.ingest.observability.speechify.dev
+  secretName: audio-server-dev.ingest.observability.speechify.dev
   issuerRef:
     name: letsencrypt
     kind: ClusterIssuer

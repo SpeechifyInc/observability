@@ -8,4 +8,5 @@ resources:
 - onboarding.yaml
 - web-app.yaml
 - audio-server.yaml
+- audio-server-dev.yaml
 namespace: observability-ingest
