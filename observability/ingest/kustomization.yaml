@@ -6,5 +6,6 @@ resources:
 - landing.yaml
 - mobile-extension.yaml
 - onboarding.yaml
+- voiceover.yaml
 - web-app.yaml
 namespace: observability-ingest

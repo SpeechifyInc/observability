@@ -101,6 +101,7 @@ data:
                   cors:
                     allowed_origins:
                       - https://voiceover.speechify.com
+                      # Experimental updates are available on beta
                       - https://beta.voiceover.speechify.com
                     max_age: 7200
     integrations:
@@ -116,6 +117,7 @@ data:
             port: 8080
             cors_allowed_origins:
               - https://voiceover.speechify.com
+              # Experimental updates are available on beta
               - https://beta.voiceover.speechify.com
           logs_labels: # labels to add to loki log record
             app: voiceover # static value
