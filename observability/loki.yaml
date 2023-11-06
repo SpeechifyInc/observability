@@ -20,6 +20,8 @@ spec:
       storage_config:
         boltdb_shipper:
           cache_ttl: 720h # 30 days
+      limits_config: 
+        max_query_series: 100000
 
       compactor:
         retention_enabled: true
@@ -39,7 +41,7 @@ spec:
       name: loki
       annotations:
         # !!! Update this line
-        iam.gke.io/gcp-service-account: observability-loki@PROJECT_ID_HERE.iam.gserviceaccount.com
+        iam.gke.io/gcp-service-account: observability-loki@speechifymobile.iam.gserviceaccount.com
 ---
 apiVersion: monitoring.grafana.com/v1alpha1
 kind: LogsInstance
